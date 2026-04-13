@@ -1,0 +1,36 @@
+---
+#title: ""
+#lang: en
+#page-navigation: true  # bas de page <--avant  suivant-->
+---
+
+# Conclusion
+
+Survival Analysis is a versatile tool for addressing a variety of business situations:
+
+- Business Planning: it can be used to forecast the monthly number of customer churn events and to monitor current lapse rates.
+- Customer Segmentation: the model can predict each customer's time to the next purchase, which helps in identifying and differentiating 'active' versus 'inactive' customers.
+- Campaign Evaluation: it allows for the precise evaluation of marketing campaigns by monitoring their effect on customer survival rates.
+
+Ultimately, these applications all have a direct impact on the Customer Lifetime Value (LTV). Furthermore, this analysis can be extended to evaluate the potential of win-back initiatives by estimating the LTV of reactivated customers.
+
+![](img/img7.png){width=50%}
+
+## Additional Resources
+
+- The survival package documentation.
+- The eha (event history analysis) package documentation.
+- For multiple comparisons, ggplot2 does facet layouts.
+- If modeling time-varying Cox proportional hazards regression model, tidyr is useful for reshaping wide data.frames into long data.frames.
+- With the mstate package, we can model multistate and competing risks. LTV or win-backs imply multistates.
+
+- [Dayne Batten's blog posts](http://daynebatten.com/category/survival-analysis/) on Survival Analysis in the business setting.
+- [Barry Leventhal's presentation](http://www.barryanalytics.com/Downloads/Presenations/Survival%20Analysis.pdf) with business insights.
+
+```{r}
+#| include: false
+# In Python, modules:
+# lifelines
+# scikit-learn
+# StatsModels```
+```
