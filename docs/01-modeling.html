@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Understanding survival analysis for customer churn analysis.">
+
+<title>2&nbsp; Modeling Churn with Survival Curves – Customer Churn Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./02-survival.html" rel="next">
+<link href="./index.html" rel="prev">
+<link href="./img/favicon.ico" rel="icon">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-4d9afe2b8d18ee9fa5d0d57b5ed4214d.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-ebf31b8befc8ea8ceeec7a5ef9731bf3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-759f9646193035ce9dc1a6f9badf018e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-ebf31b8befc8ea8ceeec7a5ef9731bf3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": true,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": true,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "search",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar docked quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-modeling.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Modeling Churn with Survival Curves</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header sidebar-header-stacked">
+      <a href="./index.html" class="sidebar-logo-link">
+      <img src="./img/img6.png" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none">
+      <img src="./img/img6.png" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none">
+      </a>
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Customer Churn Analysis</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <div class="dropdown">
+      <a href="" title="Download" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Download"><i class="bi bi-download"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="./Customer-Churn-Analysis.pdf">
+              <i class="bi bi-file-pdf pe-1"></i>
+            Download PDF
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="./Customer-Churn-Analysis.epub">
+              <i class="bi bi-journal pe-1"></i>
+            Download ePub
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introduction to Customer Churn</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-modeling.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Modeling Churn with Survival Curves</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-survival.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Survival Regression to Predict Customer Churn</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-conclusion.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Conclusion</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="2">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-proportional-hazards-models" id="toc-sec-proportional-hazards-models" class="nav-link active" data-scroll-target="#sec-proportional-hazards-models"><span class="header-section-number">2.1</span> Proportional Hazards Models</a></li>
+  <li><a href="#accelerated-failure-time-models" id="toc-accelerated-failure-time-models" class="nav-link" data-scroll-target="#accelerated-failure-time-models"><span class="header-section-number">2.2</span> Accelerated Failure Time Models</a></li>
+  <li><a href="#just-a-reminder" id="toc-just-a-reminder" class="nav-link" data-scroll-target="#just-a-reminder"><span class="header-section-number">2.3</span> Just a Reminder</a></li>
+  <li><a href="#comparison-of-the-parameters" id="toc-comparison-of-the-parameters" class="nav-link" data-scroll-target="#comparison-of-the-parameters"><span class="header-section-number">2.4</span> Comparison of the Parameters</a></li>
+  <li><a href="#takeways" id="toc-takeways" class="nav-link" data-scroll-target="#takeways"><span class="header-section-number">2.5</span> Takeways</a></li>
+  <li><a href="#sec-comparing-survival-curves" id="toc-sec-comparing-survival-curves" class="nav-link" data-scroll-target="#sec-comparing-survival-curves"><span class="header-section-number">2.6</span> Comparing Survival Curves</a></li>
+  <li><a href="#takeaway" id="toc-takeaway" class="nav-link" data-scroll-target="#takeaway"><span class="header-section-number">2.7</span> Takeaway</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Modeling Churn with Survival Curves</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>The survival curve is a fundamental tool in Survival Analysis. It illustrates the probability that a customer will remain subscribed over a given period. As time progresses, the probability of survival decreases and the risk of churn increases.</p>
+<section id="sec-proportional-hazards-models" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="sec-proportional-hazards-models"><span class="header-section-number">2.1</span> Proportional Hazards Models</h2>
+<p><code>tenure</code> and <code>Churn</code> are the two dependent variables for the Survival Analysis.</p>
+<p>We begin with a Weibull Proportional Hazards (PH) model, using two independant variables or covariates:</p>
+<ul>
+<li>Subscribers’ <code>Contract</code> type.</li>
+<li>Whether they have <code>MultipleLines</code>.</li>
+</ul>
+<p>The Weibull distribution is a common choice for estimating the survival curve, as it is a natural fit for modeling time-to-event data, such as a machine’s time to failure, a patient time to death or a customer’s time to churn.</p>
+<p>A <strong>covariate</strong> is an explanatory variable used in a model, and it can be either <strong>categorical</strong> (a <strong>factor</strong>) or <strong>continuous</strong>. Categorical covariates or factors have levels or categories, which can be either <strong>nominal</strong> (without a natural order, like gender) or <strong>ordinal</strong> (with a ranked order, like a rating from low to high). A categorical covariates with 2 levels or categories is called <strong>binary</strong> or <strong>dichotomous</strong>. Continuous covariates, such as age or disposable income, are measured on a scale. Age is a classic example of a <strong>time-dependent</strong> covariate because its value changes due to the passing of time, whereas disposable income can also change over time (<strong>time-varying</strong>), but not because of time.</p>
+<p>As shown in <a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>, each result should be interpreted in isolation, holding all other covariates constant (<em>ceteris paribus</em>). Each result should also be interpreted on a logarithmic scale, so their direct values are not always intuitive.</p>
+<p>Keep in mind that these models and results are based on a fictitious dataset and are for illustrative purposes only.</p>
+<div class="cell">
+<div id="tbl-weibull.ph.model.1" class="cell quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-weibull.ph.model.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2.1: Coefficients.
+</figcaption>
+<div aria-describedby="tbl-weibull.ph.model.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: center;">Coef.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ContractOne year</td>
+<td style="text-align: center;">-2.1077429</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ContractTwo year</td>
+<td style="text-align: center;">-3.7239890</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MultipleLinesNo phone service</td>
+<td style="text-align: center;">-0.2891042</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MultipleLinesYes</td>
+<td style="text-align: center;">-0.3604447</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">log(scale)</td>
+<td style="text-align: center;">3.5809741</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">log(shape)</td>
+<td style="text-align: center;">-0.1757588</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<ul>
+<li>Coefficient &gt; 0: a positive coefficient indicates that as the value of the covariate increases, the hazard of the event (churn) also increases, holding all other variables constant.</li>
+<li>Coefficient &lt; 0: a negative coefficient means that as the covariate increases, the hazard of the event (churn) decreases.
+<ul>
+<li>A lower (more negative) coefficient is associated with a lower hazard of the event (churn).</li>
+</ul></li>
+<li>Coefficient = 0: a coefficient of zero suggests the covariate has no effect on the hazard.</li>
+</ul>
+<p>As shown in <a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>, a two-year contract is the most effective at reducing churn risk: -3.724. In contrast, subscribers with multiple lines but no phone service have a weaker effect on reducing churn: -0.289.</p>
+<p>The coefficients <code>log(scale)</code> and <code>log(shape)</code> are the parameters of the Weibull distribution that determine the shape of the survival curve. We will explore these concepts in more detail later.</p>
+<p>As shown in <a href="#tbl-weibull.ph.model.1_coef_2" class="quarto-xref">Table&nbsp;<span>2.2</span></a>, it is often easier to interpret the exponentiated coefficients. These provide a direct, multiplicative measure of the effect on the hazard.</p>
+<div class="cell">
+<div id="tbl-weibull.ph.model.1_coef_2" class="cell quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-weibull.ph.model.1_coef_2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2.2: exp(Coefficients).
+</figcaption>
+<div aria-describedby="tbl-weibull.ph.model.1_coef_2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: center;">exp(Coef.)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ContractOne year</td>
+<td style="text-align: center;">0.1215119</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ContractTwo year</td>
+<td style="text-align: center;">0.0241375</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MultipleLinesNo phone service</td>
+<td style="text-align: center;">0.7489342</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MultipleLinesYes</td>
+<td style="text-align: center;">0.6973662</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<ul>
+<li>Hazard Ratio &gt; 1: the covariate increases the hazard of the event. For example, a hazard ratio of 1.50 means the hazard is 50% higher for a one-unit increase in the variable, holding all other covariates constant.</li>
+<li>Hazard Ratio &lt; 1: the covariate decreases the hazard. A hazard ratio of 0.75 indicates a 25% reduction in hazard for a one-unit increase, holding all other covariates constant.</li>
+<li>Hazard Ratio = 1: the covariate has no effect on the hazard.</li>
+</ul>
+<p>The <strong>hazard ratio</strong> is not the same as <strong>probability</strong> or the <strong>odds</strong>.</p>
+<p>A hazard ratio is a relative measure. If a covariate has a hazard ratio of 1.10, it means that a customer with that characteristic has a (1.10 - 1) 0.10 or 10% higher instantaneous risk of churning at any given moment, when holding all other covariates constant (<em>ceteris paribus</em>).</p>
+<p>As shown in <a href="#tbl-weibull.ph.model.1_coef_2" class="quarto-xref">Table&nbsp;<span>2.2</span></a>, a one-unit increase in a two-year contract , 0.024, would changes the hazard of churn by -0.976% compared to the baseline while a one-year contract, 0.122, would change it by -0.878% holding all other covariates constant (<em>ceteris paribus</em>).</p>
+<p>It means the churn rate is lowered for that group holding a two-year contract. This extends the expected tenure for that group holding a two-year contract.</p>
+<p>The survival curve (<a href="#fig-weibull.ph.model.1" class="quarto-xref">Figure&nbsp;<span>2.1</span></a>) is a vital tool for validating whether the analytical model aligns with your business’s understanding of the customer lifecycle.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-weibull.ph.model.1" class="quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-weibull.ph.model.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="01-modeling_files/figure-html/fig-weibull.ph.model.1-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;2.1: Weibull PH Model."><img src="01-modeling_files/figure-html/fig-weibull.ph.model.1-1.png" class="img-fluid figure-img" width="672"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-weibull.ph.model.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.1: Weibull PH Model.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-weibull.ph.model.1b" class="quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-weibull.ph.model.1b-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="01-modeling_files/figure-html/fig-weibull.ph.model.1b-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;2.2: Weibull PH Model."><img src="01-modeling_files/figure-html/fig-weibull.ph.model.1b-1.png" class="img-fluid figure-img" width="672"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-weibull.ph.model.1b-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.2: Weibull PH Model.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>As time passes, the number of survivers or subscribers steadily decreases.</p>
+<p>The Survival Analysis reveals a significant churn rate, with the survival rate dropping to 50% after just 24 months. Due to this substantial early churn, long-term predictions become less reliable. For example, with fewer than 20% of the original subscribers remaining after 70 months, the model’s ability to make precise forecasts is significantly reduced.</p>
+<p>For each covariate, the hazard ratio changes the steepness of the baseline survival curve. A hazard ratio less than 1 makes the curve less steep, indicating a lower risk and better survival. For example, a two-year contract has a positive effect, making the curve less steep (a shallower descent) and showing better survival over time.</p>
+<p>In <a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>, the log coefficients (<code>log(scale)</code> and <code>log(shape)</code>) are parameters that define the Weibull distribution used in the PH model.</p>
+<p>The <code>shape</code> parameter (<span class="math inline">\(\lambda\)</span>) is the key metric that dictates how the hazard rate changes over time. It determines whether the risk of an event is increasing, decreasing, or constant throughout the observation period.</p>
+<ul>
+<li><p><span class="math inline">\(\lambda\)</span> &gt; 1: the hazard is increasing over time. This indicates an accelerating risk, which is common for things that wear out, like mechanical parts.</p></li>
+<li><p><span class="math inline">\(\lambda\)</span> &lt; 1: the hazard is decreasing over time. This indicates a decelerating risk, which is often seen with customers who become more loyal over time.</p></li>
+<li><p><span class="math inline">\(\lambda\)</span> = 1: the hazard is constant over time. This is a special case known as the Exponential model, where the risk does not change.</p></li>
+<li><p><code>log(shape)</code> &gt; 0 corresponds to <span class="math inline">\(\lambda\)</span> &gt; 1: the hazard function is increasing.</p></li>
+<li><p><code>log(shape)</code> &lt; 0 corresponds to <span class="math inline">\(\lambda\)</span> &lt; 1: the hazard function is decreasing.</p>
+<ul>
+<li>In <a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>, <code>log(shape)</code> = -0.176 &lt; 0 and the hazard function is decreasing. In addition, we exponentiate <code>log(shape)</code> = <code>shape</code> = <span class="math inline">\(\lambda\)</span> = 0.839 &lt; 1.</li>
+</ul></li>
+<li><p><code>log(shape)</code> = 0 corresponds to <span class="math inline">\(\lambda\)</span> = 1: the hazard function is constant.</p></li>
+</ul>
+<p>The <code>scale</code> parameter (<span class="math inline">\(\eta\)</span>) is a time-scaling factor. It defines the overall magnitude of the hazard function and helps determine where the baseline survival curve is located on the time axis.</p>
+<p>When comparing two Weibull PH models, a larger <code>scale</code> parameter means the hazard is lower at a given time point, which results in a longer average duration or survival time.</p>
+<p>The relation with <code>log(scale)</code> is <span class="math inline">\(\eta = e^{\log(\text{scale})}\)</span>. In a Weibull PH model output (<a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>), the <code>log(shape)</code> parameter is provided: 3.581; and the scale can be calculated: <span class="math inline">\(\eta\)</span> = 35.909.</p>
+<p>Based on the analysis, we can confidently say that the hazard of churn is not constant over time.</p>
+<p>The <code>log(shape)</code> coefficient, -0.176, in <a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a> confirms that the hazard curve is decreasing. As shown in <a href="#fig-weibull.ph.model.1b" class="quarto-xref">Figure&nbsp;<span>2.2</span></a>, the hazard of churn is highest in the first 7 to 10 months. After this initial period, the hazard rapidly declines and then flattens out.</p>
+<p>This behavior directly explains the shape of the survival curve in <a href="#fig-weibull.ph.model.1" class="quarto-xref">Figure&nbsp;<span>2.1</span></a>: the high initial hazard causes the steep drop in the number of subscribers, while the subsequent decline and flattening of the hazard curve is reflected in the survival curve’s deceleration over time.</p>
+</section>
+<section id="accelerated-failure-time-models" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="accelerated-failure-time-models"><span class="header-section-number">2.2</span> Accelerated Failure Time Models</h2>
+<p>To confirm our findings, we fit a Weibull Accelerated Failure Time (AFT) model using the same set of independant variables or covariates:</p>
+<ul>
+<li>Subscribers’ <code>Contract</code> type.</li>
+<li>Whether they have <code>MultipleLines</code>.</li>
+</ul>
+<p><code>tenure</code> and <code>Churn</code> remain the two dependent variables.</p>
+<p>As shown in <a href="#tbl-weibull.aft.model.coef.1" class="quarto-xref">Table&nbsp;<span>2.3</span></a>, each result should be interpreted in isolation, holding all other covariates constant (<em>ceteris paribus</em>). Each result should also be interpreted on a log <code>scale</code>, so their direct values are not always intuitive.</p>
+<div class="cell">
+<div id="tbl-weibull.aft.model.coef.1" class="cell quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-weibull.aft.model.coef.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2.3: Coefficients.
+</figcaption>
+<div aria-describedby="tbl-weibull.aft.model.coef.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: center;">Coef.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">(Intercept)</td>
+<td style="text-align: center;">3.5809741</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ContractOne year</td>
+<td style="text-align: center;">2.5127468</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ContractTwo year</td>
+<td style="text-align: center;">4.4395554</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MultipleLinesNo phone service</td>
+<td style="text-align: center;">0.3446557</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MultipleLinesYes</td>
+<td style="text-align: center;">0.4297043</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<ul>
+<li>Coefficient &gt; 0: as the value of the covariate increases, the duration or survival time also increases, holding all other variables constant.</li>
+<li>Coefficient &lt; 0: as the covariate increases, the duration or survival time decreases.</li>
+<li>Coefficient = 0: the covariate has no effect on the the duration or survival time.</li>
+</ul>
+<p>As shown in <a href="#tbl-weibull.aft.model.coef.1" class="quarto-xref">Table&nbsp;<span>2.3</span></a>, a two-year contract has a more substantial effect on duration or survival time, with a coefficient of 4.44 then a one-year contract.</p>
+<p>This finding is consistent with the results from the Weibull PH model. A higher coefficient in the Weibull AFT model (indicating a longer duration or survival time) corresponds directly to a lower hazard of churn in the Weibull PH model.</p>
+<p>As shown in <a href="#tbl-weibull.aft.model.coef.2" class="quarto-xref">Table&nbsp;<span>2.4</span></a>, it is often easier to interpret the exponentiated coefficients. These provide a direct, multiplicative measure of the effect on duration or survival time.</p>
+<div class="cell">
+<div id="tbl-weibull.aft.model.coef.2" class="cell quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-weibull.aft.model.coef.2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2.4: exp(Coefficients).
+</figcaption>
+<div aria-describedby="tbl-weibull.aft.model.coef.2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: center;">exp(Coef.)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">(Intercept)</td>
+<td style="text-align: center;">35.908503</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ContractOne year</td>
+<td style="text-align: center;">12.338776</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ContractTwo year</td>
+<td style="text-align: center;">84.737258</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MultipleLinesNo phone service</td>
+<td style="text-align: center;">1.411504</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MultipleLinesYes</td>
+<td style="text-align: center;">1.536803</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<ul>
+<li>Time Ratio &gt; 1: the covariate increases the duration or survival time. For example, a time ratio of 2.0 means the duration is 2 times longer for a one-unit increase in the covariate, holding all other covariates constant.</li>
+<li>Time Ratio &lt; 1: the covariate decreases the duration or survival time. A duration ratio of 0.5 means the duration is 2 times shorter for a one-unit increase in the covariate, holding all other covariates constant.</li>
+<li>Time Ratio = 1: the covariate has no effect on duration or survival time.</li>
+</ul>
+<p>A one-unit increase in a two-year contract would extend the duration by a factor of 84.737 compared to the baseline, holding all other covariates constant (<em>ceteris paribus</em>).</p>
+<p>The time ratio is also called the accelation factor.</p>
+<p>The coefficients from these two model types are inversely related. While the AFT coefficients describe a multiplicative change in duration or survival time, the PH coefficients describe a multiplicative change in the hazard rate.</p>
+<p>As shown in <a href="#tbl-weibull.aft.model.pch.1" class="quarto-xref">Table&nbsp;<span>2.5</span></a>, we also compute the percentage change in duration or survival time from the model’s coefficients: <span class="math inline">\(\text{percentage change} = (e^{\beta} - 1) \times 100\%\)</span>.</p>
+<div class="cell">
+<div id="tbl-weibull.aft.model.pch.1" class="cell quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-weibull.aft.model.pch.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2.5: Pourcentage Change.
+</figcaption>
+<div aria-describedby="tbl-weibull.aft.model.pch.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: center;">%Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">(Intercept)</td>
+<td style="text-align: center;">3490.85033</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ContractOne year</td>
+<td style="text-align: center;">1133.87760</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ContractTwo year</td>
+<td style="text-align: center;">8373.72579</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MultipleLinesNo phone service</td>
+<td style="text-align: center;">41.15039</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MultipleLinesYes</td>
+<td style="text-align: center;">53.68030</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<ul>
+<li>Percentage ratio &gt; 1: an increase in the duration or survival time.</li>
+<li>Percentage ratio &lt; 1: a decrease in the duration or survival time.</li>
+<li>Percentage ratio = 1: no effect in the duration or survival time.</li>
+</ul>
+<p>Compared to the baseline group, having a two-year contract extends the subscription duration by 8373.7%, holding all other covariates constant (<em>ceteris paribus</em>). This means the entire survival curve for this group is stretched out, a concept that is far easier for a non-technical audience to understand than a raw coefficient or time ratio.</p>
+<p>PH Models produce coefficients that measure the effect of covariates on churn. These coefficients quantify how a covariate influences the hazard, which in turn impacts subscription duration.</p>
+<p>AFT Models produce coefficients that measure the effect of covariates on duration. These coefficients quantify how a covariate influences the survival time, which in turn impacts the churn rate.</p>
+<p>An increase in subscription duration is inversely related to the hazard of churn. A longer subscription period is associated with a lower risk of the event (churn).</p>
+<p>For example, two-year contracts are associated with a reduction in churn, 8373.7%, an effect that is greater than that of one-year contracts. This finding is consistent with the results from the Weibull PH model.</p>
+</section>
+<section id="just-a-reminder" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="just-a-reminder"><span class="header-section-number">2.3</span> Just a Reminder</h2>
+<p>The parameter estimates for Weibull PH and AFT models have fundamentally different interpretations.</p>
+<p>The Proportional Hazards (PH) models are based on the assumption that covariates have a multiplicative effect on the hazard (or risk) of an event. This makes it ideal for comparing how different factors increase or decrease the risk of churn.</p>
+<p>The Accelerated Failure Time (AFT) models, by contrast, are based on the assumption that covariates have a multiplicative effect on the duration or survival time. This makes it useful for comparing how different factors extend or shorten the subscription period.</p>
+<p>The Weibull PH model can also be used to generate visualizations that depict the hazard rate and survival probability over the subscription duration (<a href="#fig-weibull.ph_model.functions" class="quarto-xref">Figure&nbsp;<span>2.3</span></a>).</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-weibull.ph_model.functions" class="quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-weibull.ph_model.functions-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="01-modeling_files/figure-html/fig-weibull.ph_model.functions-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure&nbsp;2.3: Weibull PH Functions."><img src="01-modeling_files/figure-html/fig-weibull.ph_model.functions-1.png" class="img-fluid figure-img" width="672"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-weibull.ph_model.functions-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.3: Weibull PH Functions.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>In <a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>, the log coefficients (<code>log(scale)</code> and <code>log(shape)</code>) are parameters that define the Weibull distribution used in the PH model.</p>
+<p>The <code>shape</code> parameter (<span class="math inline">\(\lambda\)</span>) is the key metric that dictates how the hazard rate changes over time. It determines whether the risk of an event is increasing, decreasing, or constant throughout the observation period.</p>
+<ul>
+<li><p><span class="math inline">\(\lambda\)</span> &gt; 1: the hazard is increasing over time. This indicates an accelerating risk, which is common for things that wear out, like mechanical parts.</p></li>
+<li><p><span class="math inline">\(\lambda\)</span> &lt; 1: the hazard is decreasing over time. This indicates a decelerating risk, which is often seen with customers who become more loyal over time.</p></li>
+<li><p><span class="math inline">\(\lambda\)</span> = 1: the hazard is constant over time. This is a special case known as the Exponential model, where the risk does not change.</p></li>
+<li><p><code>log(shape)</code> &gt; 0 corresponds to <span class="math inline">\(\lambda\)</span> &gt; 1: the hazard function is increasing.</p></li>
+<li><p><code>log(shape)</code> &lt; 0 corresponds to <span class="math inline">\(\lambda\)</span> &lt; 1: the hazard function is decreasing.</p>
+<ul>
+<li>In <a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>, <code>log(shape)</code> = -0.176 &lt; 0 and the hazard function is decreasing. In addition, we exponentiate <code>log(shape)</code> = <code>shape</code> = <span class="math inline">\(\lambda\)</span> = 0.839 &lt; 1.</li>
+</ul></li>
+<li><p><code>log(shape)</code> = 0 corresponds to <span class="math inline">\(\lambda\)</span> = 1: the hazard function is constant.</p></li>
+</ul>
+<p>While PH models are commonly used to visualize hazard and survival curves, AFT models are focused on measuring the direct impact on time.</p>
+<p>The key distinction is that PH models measure the effect of covariates on the churn rate, which in turn affects duration, whereas AFT models directly measure the effect on duration, which in turn affects the churn rate.</p>
+<p>Ultimately, the choice of model depends on the research question. However, the results from both models can be compared using their respective metrics (for example, hazard ratios for PH models and time ratios for AFT models) to provide a consistent view of the underlying dynamics.</p>
+<p>The relationship between the Weibull PH model and the Weibull AFT model is unique and directly tied to the <code>shape</code> parameter. The Weibull distribution is the only distribution that satisfies both the PH and AFT assumptions, allowing for a direct conversion between the parameters of the two models.</p>
+<p>The key to this relationship is that <strong>the <code>shape</code> parameter in a Weibull PH model</strong> (<span class="math inline">\(\lambda_{PH}\)</span>) is the reciprocal of <strong>the <code>scale</code> parameter in a Weibull AFT model</strong> (<span class="math inline">\(\sigma_{AFT}\)</span>):</p>
+<p><span class="math display">\[\lambda_{PH} = \frac{1}{\sigma_{AFT}}\]</span></p>
+<ul>
+<li>Weibull PH Model <code>shape</code> parameter, <span class="math inline">\(\lambda_{PH}\)</span> = 0.839.</li>
+<li>Weibull AFT Model <code>scale</code> parameter, <span class="math inline">\(\sigma_{AFT}\)</span> = 1.192 and the reciprocal <span class="math inline">\(\frac{1}{\sigma_{AFT}}\)</span> = 0.839.</li>
+</ul>
+<p>The Weibull AFT model confirms the Weibull PH model.</p>
+</section>
+<section id="comparison-of-the-parameters" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="comparison-of-the-parameters"><span class="header-section-number">2.4</span> Comparison of the Parameters</h2>
+<p><strong>Weibull PH model, <code>log(scale)</code> and <code>scale</code>.</strong></p>
+<p>The <code>scale</code> parameter (<span class="math inline">\(\eta\)</span>) is a time-scaling factor. It defines the overall magnitude of the hazard function and helps determine where the baseline survival curve is located on the time axis.</p>
+<p>When comparing two Weibull PH models, a larger <code>scale</code> parameter is associated with a lower hazard and, consequently, a longer duration or survival time.</p>
+<p>The relation with <code>log(scale)</code> is <span class="math inline">\(\eta = e^{\log(\text{scale})}\)</span>. In a Weibull PH model output (<a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>), the <code>log(shape)</code> parameter is provided: 3.581; and the scale can be calculated: <span class="math inline">\(\eta\)</span> = 35.909.</p>
+<p><strong>Weibull PH model, <code>log(shape)</code> and <code>shape</code>.</strong></p>
+<p>The <code>shape</code> parameter (<span class="math inline">\(\lambda\)</span>) is the most important parameter for interpreting the Weibull PH model’s baseline hazard. It describes how the hazard rate changes over time.</p>
+<ul>
+<li><p><span class="math inline">\(\lambda\)</span> &gt; 1: the hazard is increasing over time. This indicates an accelerating risk, which is common for things that wear out, like mechanical parts.</p></li>
+<li><p><span class="math inline">\(\lambda\)</span> &lt; 1: the hazard is decreasing over time. This indicates a decelerating risk, which is often seen with customers who become more loyal over time.</p></li>
+<li><p><span class="math inline">\(\lambda\)</span> = 1: the hazard is constant over time. This is a special case known as the Exponential model, where the risk does not change.</p></li>
+<li><p><code>log(shape)</code> &gt; 0 corresponds to <span class="math inline">\(\lambda\)</span> &gt; 1: the hazard function is increasing.</p></li>
+<li><p><code>log(shape)</code> &lt; 0 corresponds to <span class="math inline">\(\lambda\)</span> &lt; 1: the hazard function is decreasing.</p>
+<ul>
+<li>In <a href="#tbl-weibull.ph.model.1" class="quarto-xref">Table&nbsp;<span>2.1</span></a>, <code>log(shape)</code> = -0.176 &lt; 0 and the hazard function is decreasing. In addition, we exponentiate <code>log(shape)</code> = <code>shape</code> = <span class="math inline">\(\lambda\)</span> = 0.839 &lt; 1.</li>
+</ul></li>
+<li><p><code>log(shape)</code> = 0 corresponds to <span class="math inline">\(\lambda\)</span> = 1: the hazard function is constant.</p></li>
+</ul>
+<p><strong>Weibull AFT model, <code>log(scale)</code> and <code>scale</code>.</strong></p>
+<p>In the AFT model, the <code>scale</code> parameter (<span class="math inline">\(\sigma\)</span>) defines the hazard’s behavior over time.</p>
+<ul>
+<li><span class="math inline">\(\sigma\)</span> &lt; 1: the hazard is increasing over time. This indicates an accelerating risk, which is common for things that wear out, like mechanical parts.</li>
+<li><span class="math inline">\(\sigma\)</span> &gt; 1: the hazard is decreasing over time. This indicates a decelerating risk, which is often seen with customers who become more loyal over time.
+<ul>
+<li><code>scale</code> = <span class="math inline">\(\sigma\)</span> = 1.192 &gt; 1 and the hazard function is decreasing. <code>log(scale)</code> = 0.176.</li>
+</ul></li>
+<li><span class="math inline">\(\sigma\)</span> &gt; 1: the hazard is constant over time.</li>
+</ul>
+<p>The <code>shape</code> parameter in a Weibull PH model (<span class="math inline">\(\lambda_{PH}\)</span>) is the reciprocal of the <code>scale</code> parameter in a Weibull AFT model (<span class="math inline">\(\sigma_{AFT}\)</span>):</p>
+<p><span class="math display">\[\lambda_{PH} = \frac{1}{\sigma_{AFT}}\]</span></p>
+<ul>
+<li>Weibull PH Model <code>shape</code> parameter, <span class="math inline">\(\lambda_{PH}\)</span> = 0.839.</li>
+<li>Weibull AFT Model <code>scale</code> parameter, <span class="math inline">\(\sigma_{AFT}\)</span> = 1.192 and the reciprocal <span class="math inline">\(\frac{1}{\sigma_{AFT}}\)</span> = 0.839.</li>
+</ul>
+</section>
+<section id="takeways" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="takeways"><span class="header-section-number">2.5</span> Takeways</h2>
+<p>It is critical to select the right model to accurately represent the data, as a proper understanding of the hazard and survival functions is essential for making sound business decisions.</p>
+<p>Beyond the statistics, the churn rate is a serious business issue with a direct impact on customer lifecycle management, revenues and long-term profitability.</p>
+<p>Given the model’s results, any initiative to lower churn is likely to increase long-term profits. The analysis of the Weibull model’s shape parameter revealed that the hazard of churn is decreasing over time, particularly after the first 7 to 10 months. This means that customers who have already stayed longer are actually becoming more loyal and have a lower risk of churning. Therefore, a more effective strategy would be to focus retention efforts and incentives on newer customers, who are in the initial high-risk period, rather than on your most loyal, long-term subscribers.</p>
+</section>
+<section id="sec-comparing-survival-curves" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="sec-comparing-survival-curves"><span class="header-section-number">2.6</span> Comparing Survival Curves</h2>
+<p>We can also compare survival curves across different customer segments to gain deeper insights into churn behavior.</p>
+<p>For example, we might want to know if there is a difference in churn rates between genders.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-churn.gender" class="quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-churn.gender-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="01-modeling_files/figure-html/fig-churn.gender-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Figure&nbsp;2.4: Churn by Gender"><img src="01-modeling_files/figure-html/fig-churn.gender-1.png" class="img-fluid figure-img" width="672"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-churn.gender-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.4: Churn by Gender
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div id="tbl-churn.gender" class="cell quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-churn.gender-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2.6: Churn By Gender: Absolute and Percentage Values.
+</figcaption>
+<div aria-describedby="tbl-churn.gender-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: right;">Female</th>
+<th style="text-align: right;">Male</th>
+<th style="text-align: right;">Female</th>
+<th style="text-align: right;">Male</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">No</td>
+<td style="text-align: right;">2549</td>
+<td style="text-align: right;">2625</td>
+<td style="text-align: right;">36.19</td>
+<td style="text-align: right;">37.27</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Yes</td>
+<td style="text-align: right;">939</td>
+<td style="text-align: right;">930</td>
+<td style="text-align: right;">13.33</td>
+<td style="text-align: right;">13.20</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>As shown in <a href="#tbl-churn.gender" class="quarto-xref">Table&nbsp;<span>2.6</span></a> and <a href="#fig-churn.gender" class="quarto-xref">Figure&nbsp;<span>2.4</span></a>, it appears that the churn rates for males and females are quite similar.</p>
+<p>While a simple count of total churned customers by gender is a good starting point, it does not account for the duration of their subscriptions or the size of each group. Survival Analysis allows us to move beyond these simple counts to see if the risk of churn changes differently for each segment over time.</p>
+<p><code>tenure</code> and <code>Churn</code> are the two dependent variables.</p>
+<p>We run Weibull PH model 2, using the same two independant variables or covariates:</p>
+<ul>
+<li>Subscribers’ <code>Contract</code> type.</li>
+<li>Whether they have <code>MultipleLines</code>.</li>
+</ul>
+<p>This time, we stratify the results by <code>gender</code>.</p>
+<p>We are interested in the <code>log(scale)</code> parameters for <code>Male</code> and <code>Female</code>.</p>
+<p>The <code>scale</code> (<span class="math inline">\(\eta\)</span>) and <code>log(scale)</code> are time-scaling factors. They defines the overall magnitude of the hazard function and help determine where the baseline survival curve is located on the time axis.</p>
+<p>When comparing two Weibull PH models or two subgroups, larger <code>scale</code> and <code>log(scale)</code> parameters are associated with a lower hazard and, consequently, a longer duration or survival time.</p>
+<div class="cell">
+<div id="tbl-weibull.ph.model.2.coef.1" class="cell quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-weibull.ph.model.2.coef.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2.7: Coefficients.
+</figcaption>
+<div aria-describedby="tbl-weibull.ph.model.2.coef.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: center;">Coef.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ContractOne year</td>
+<td style="text-align: center;">-2.1075900</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ContractTwo year</td>
+<td style="text-align: center;">-3.7242056</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MultipleLinesNo phone service</td>
+<td style="text-align: center;">-0.2893374</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MultipleLinesYes</td>
+<td style="text-align: center;">-0.3604831</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">log(scale):1</td>
+<td style="text-align: center;">3.5725884</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">log(shape):1</td>
+<td style="text-align: center;">-0.1930597</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">log(scale):2</td>
+<td style="text-align: center;">3.5891540</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">log(shape):2</td>
+<td style="text-align: center;">-0.1581253</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>As shown in <a href="#tbl-weibull.ph.model.2.coef.1" class="quarto-xref">Table&nbsp;<span>2.7</span></a>, the parameters are not very different, suggesting that gender does not have a meaningful impact on churn.</p>
+<ul>
+<li><code>Female</code>: <code>log(scale):1</code>.</li>
+<li><code>Male</code>: <code>log(scale):2</code>.</li>
+</ul>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-weibull.ph.model.2" class="quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-weibull.ph.model.2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="01-modeling_files/figure-html/fig-weibull.ph.model.2-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Figure&nbsp;2.5: Weibull PH Model 2."><img src="01-modeling_files/figure-html/fig-weibull.ph.model.2-1.png" class="img-fluid figure-img" width="672"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-weibull.ph.model.2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.5: Weibull PH Model 2.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p><code>1</code> is always associated with the <strong>first</strong> category or <code>level</code> of <code>factor</code> <code>gender</code> in the dataset.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "class of gender: factor"
+[1] "levels of gender: Female" "levels of gender: Male"  </code></pre>
+</div>
+</div>
+<p><code>Female</code> is the <strong>first</strong> category or <code>level</code>.</p>
+<p>As shown in <a href="#fig-weibull.ph.model.2" class="quarto-xref">Figure&nbsp;<span>2.5</span></a>, the survival curves for the subgroups are nearly identical and closely resemble the survival curve of the overall population. This suggests that gender does not have a significant impact on duration or survival time.</p>
+<p>Now, what would be the difference between customers who have <code>Dependents</code> (children) or not. We run Weibull PH model 3.</p>
+<div class="cell">
+<div id="tbl-weibull.ph.model.3.coef.1" class="cell quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-weibull.ph.model.3.coef.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2.8: Coefficients.
+</figcaption>
+<div aria-describedby="tbl-weibull.ph.model.3.coef.1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: center;">Coef.</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ContractOne year</td>
+<td style="text-align: center;">-2.0629410</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ContractTwo year</td>
+<td style="text-align: center;">-3.6444719</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MultipleLinesNo phone service</td>
+<td style="text-align: center;">-0.3111825</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MultipleLinesYes</td>
+<td style="text-align: center;">-0.3909394</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">log(scale):1</td>
+<td style="text-align: center;">3.4529736</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">log(shape):1</td>
+<td style="text-align: center;">-0.1876260</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">log(scale):2</td>
+<td style="text-align: center;">3.9539983</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">log(shape):2</td>
+<td style="text-align: center;">-0.0737134</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>As shown in <a href="#tbl-weibull.ph.model.3.coef.1" class="quarto-xref">Table&nbsp;<span>2.8</span></a>, the parameters are different, suggesting that <code>Dependents</code> (children) does have a meaningful impact on churn.</p>
+<ul>
+<li><code>No</code>: <code>log(scale):1</code>.</li>
+<li><code>Yes</code>: <code>log(scale):2</code>.</li>
+</ul>
+<p><code>1</code> is always associated with the <strong>first</strong> category or <code>level</code> of <code>factor</code> <code>Dependents</code> in the dataset.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "class of Dependents: factor"
+[1] "levels of Dependents: No"  "levels of Dependents: Yes"</code></pre>
+</div>
+</div>
+<p><code>No</code> is the <strong>first</strong> category or <code>level</code>.</p>
+<p>When comparing two Weibull PH models or two subgroups, larger <code>scale</code> and <code>log(scale)</code> parameters are associated with a lower hazard and, consequently, a longer duration or survival time.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-weibull.ph.model.3" class="quarto-float quarto-figure quarto-figure-left anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-weibull.ph.model.3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="01-modeling_files/figure-html/fig-weibull.ph.model.3-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Figure&nbsp;2.6: Weibull PH Model 3."><img src="01-modeling_files/figure-html/fig-weibull.ph.model.3-1.png" class="img-fluid figure-img" width="672"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-weibull.ph.model.3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.6: Weibull PH Model 3.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>As shown in <a href="#fig-weibull.ph.model.3" class="quarto-xref">Figure&nbsp;<span>2.6</span></a>, the survival curve for customers with <code>Dependents</code> (children) is noticeably higher than the baseline curve. This visual evidence suggests that customers with dependents are more loyal and have a significantly higher probability of remaining subscribed at any given point in time.</p>
+<p>To determine if this difference is statistically significant, we would perform a log-rank test. The test would likely result in a rejection of the null hypothesis, which states that the two survival curves are identical. This would confirm that the survival curves are, in fact, statistically different.</p>
+<p>From the results, the model has a maximun log(likelihood) of -9289.542 with 4 covariates (4 degrees of freedom).</p>
+<p>log-rank test statistic = <span class="math inline">\(-\tfrac{loglik}{df}\)</span> where <span class="math inline">\(loglik\)</span> is the <code>Max. log. likelihood</code> or the maximum log(likelihood).</p>
+<p>The log-rank test statistic is 2322.385, giving a p-value = 0, way below 0.05 or 5%. The test is statistically significant and we can reject the null hypothesis. The two survival curves are different.</p>
+<p>For any duration or survival time, the survival rate of those with <code>Dependents</code> (children) is statistically higher and the churn is lower.</p>
+</section>
+<section id="takeaway" class="level2" data-number="2.7">
+<h2 data-number="2.7" class="anchored" data-anchor-id="takeaway"><span class="header-section-number">2.7</span> Takeaway</h2>
+<p>Based on these findings, the marketing department should prioritize customer segmentation based on whether subscribers have <code>Dependents</code> (children), as this group has a significantly higher survival rate.</p>
+<p>Conversely, the analysis revealed no statistically significant difference in churn rates between genders, so focusing marketing efforts on gender composition would be an inefficient use of resources.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            // default icon
+            link.classList.add("external");
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="Introduction to Customer Churn">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Introduction to Customer Churn</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./02-survival.html" class="pagination-link" aria-label="Survival Regression to Predict Customer Churn">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Survival Regression to Predict Customer Churn</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Book made with Quarto</p>
+</div>   
+    <div class="nav-footer-center">
+<p>Copyright</p>
+</div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
