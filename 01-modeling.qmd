@@ -1,0 +1,618 @@
+---
+#title: ""
+#lang: en
+#page-navigation: true  # bas de page <--avant  suivant-->
+---
+
+# Modeling Churn with Survival Curves
+
+```{r}
+#| include: false
+# http://www.altis.com.au/a-crash-course-in-survival-analysis-customer-churn-part-ii/
+#{{< pagebreak >}}
+```
+
+```{r}
+#| include: false
+# Needed modules
+library(ggplot2)
+library(gridExtra)
+library(ggthemes)
+library(eha)
+library(survival)
+
+telco <- readRDS("data/telco.rds")
+```
+
+The survival curve is a fundamental tool in Survival Analysis. It illustrates the probability that a customer will remain subscribed over a given period. As time progresses, the probability of survival decreases and the risk of churn increases.
+
+## Proportional Hazards Models {#sec-proportional-hazards-models}
+
+`tenure` and `Churn` are the two dependent variables for the Survival Analysis.
+
+We begin with a Weibull Proportional Hazards (PH) model, using two independant variables or covariates:
+
+- Subscribers' `Contract` type.
+- Whether they have `MultipleLines`.
+
+The Weibull distribution is a common choice for estimating the survival curve, as it is a natural fit for modeling time-to-event data, such as a machine's time to failure, a patient time to death or a customer's time to churn.
+
+A **covariate** is an explanatory variable used in a model, and it can be either **categorical** (a **factor**) or **continuous**. Categorical covariates or factors have levels or categories, which can be either **nominal** (without a natural order, like gender) or **ordinal** (with a ranked order, like a rating from low to high). A categorical covariates with 2 levels or categories is called **binary** or **dichotomous**. Continuous covariates, such as age or disposable income, are measured on a scale. Age is a classic example of a **time-dependent** covariate because its value changes due to the passing of time, whereas disposable income can also change over time (**time-varying**), but not because of time.
+
+```{r}
+#| include: false
+# Check the dataset
+str(telco)
+telco[1, ]
+
+# Remove the tenure = 0
+summary(telco$tenure)
+dim(telco)
+
+telco2 <- subset(telco, telco$tenure != 0)
+
+summary(telco2$tenure)
+dim(telco2)
+
+# Convert str to fct
+telco2$Churn <- as.factor(telco2$Churn)
+telco2$Contract <- as.factor(telco2$Contract)
+telco2$MultipleLines <- as.factor(telco2$MultipleLines)
+telco2$gender <- as.factor(telco2$gender)
+telco2$Dependents <- as.factor(telco2$Dependents)
+telco2$SeniorCitizen <- as.factor(telco2$SeniorCitizen)
+telco2$PaperlessBilling <- as.factor(telco2$PaperlessBilling)
+
+# Convert Churn
+levels(telco2$Churn) <- c(0, 1)
+
+# Convert Churn, fct to int
+telco2$Churn <- as.integer(telco2$Churn)
+
+# Check
+telco$Churn[1:10]
+telco2$Churn[1:10]
+
+summary(telco2$tenure)
+summary(telco2$Churn)
+summary(telco2$Contract)
+summary(telco2$MultipleLines)
+summary(telco2$SeniorCitizen)
+summary(telco2$PaperlessBilling)
+
+saveRDS(telco2, "data/telco2.rds")
+```
+
+```{r}
+#| include: false
+# PH regression
+# On the left side, only dbl, int
+# On the right side, only fct
+# telco2
+# left
+#   $tenure int
+#   $Churn int
+# right (covariates)
+#   $Contract fct
+#   $MultipleLines fct
+weibull_ph_model <- eha::phreg(Surv(tenure, Churn) ~ Contract + MultipleLines,
+                          dist = 'weibull',
+                          data = telco2)
+
+summary(weibull_ph_model)
+
+attributes(weibull_ph_model)
+```
+
+```{r}
+#| include: false
+# Keep one result
+weibull_ph_model_coeff_1 <- round(weibull_ph_model$coefficients[2], 3)
+# Keep one result
+weibull_ph_model_coeff_2 <- round(weibull_ph_model$coefficients[3], 3)
+
+# Keep one result
+weibull_ph_model_log_scale <- round(weibull_ph_model$coefficients[5], 3)
+# Keep one result
+weibull_ph_model_scale <- round(exp(weibull_ph_model_log_scale), 3)
+
+# Keep one result
+weibull_ph_model_log_shape <- round(weibull_ph_model$coefficients[6], 3)
+# Keep one result
+weibull_ph_model_shape <- round(exp(weibull_ph_model_log_shape), 3)
+```
+
+As shown in @tbl-weibull.ph.model.1, each result should be interpreted in isolation, holding all other covariates constant (*ceteris paribus*). Each result should also be interpreted on a logarithmic scale, so their direct values are not always intuitive.
+
+Keep in mind that these models and results are based on a fictitious dataset and are for illustrative purposes only.
+
+```{r}
+#| label: tbl-weibull.ph.model.1
+#| tbl-cap: "Coefficients."
+knitr::kable(weibull_ph_model$coefficients,
+             col.names = 'Coef.',
+             align = 'c')
+```
+
+- Coefficient > 0: a positive coefficient indicates that as the value of the covariate increases, the hazard of the event (churn) also increases, holding all other variables constant.
+- Coefficient < 0: a negative coefficient means that as the covariate increases, the hazard of the event (churn) decreases.
+    - A lower (more negative) coefficient is associated with a lower hazard of the event (churn).
+- Coefficient = 0: a coefficient of zero suggests the covariate has no effect on the hazard.
+
+As shown in @tbl-weibull.ph.model.1, a two-year contract is the most effective at reducing churn risk: `{r} weibull_ph_model_coeff_1`. In contrast, subscribers with multiple lines but no phone service have a weaker effect on reducing churn: `{r} weibull_ph_model_coeff_2`.
+
+The coefficients `log(scale)` and `log(shape)` are the parameters of the Weibull distribution that determine the shape of the survival curve. We will explore these concepts in more detail later.
+
+As shown in @tbl-weibull.ph.model.1_coef_2, it is often easier to interpret the exponentiated coefficients. These provide a direct, multiplicative measure of the effect on the hazard.
+
+```{r}
+#| label: tbl-weibull.ph.model.1_coef_2
+#| tbl-cap: "exp(Coefficients)."
+knitr::kable(exp(weibull_ph_model$coefficients[1:4]),
+             col.names = 'exp(Coef.)',
+             align = 'c')
+```
+
+```{r}
+#| include: false
+# Keep one result
+weibull_ph_model_coeff_3 <- round(exp(weibull_ph_model$coefficients[2]), 3)
+# Keep one result
+weibull_ph_model_coeff_4 <- round(exp(weibull_ph_model$coefficients[1]), 3)
+```
+
+- Hazard Ratio > 1: the covariate increases the hazard of the event. For example, a hazard ratio of 1.50 means the hazard is 50% higher for a one-unit increase in the variable, holding all other covariates constant.
+- Hazard Ratio < 1: the covariate decreases the hazard. A hazard ratio of 0.75 indicates a 25% reduction in hazard for a one-unit increase, holding all other covariates constant.
+- Hazard Ratio = 1: the covariate has no effect on the hazard.
+
+The **hazard ratio** is not the same as **probability** or the **odds**.
+
+A hazard ratio is a relative measure. If a covariate has a hazard ratio of 1.10, it means that a customer with that characteristic has a (1.10 - 1) 0.10 or 10% higher instantaneous risk of churning at any given moment, when holding all other covariates constant (*ceteris paribus*).
+
+As shown in @tbl-weibull.ph.model.1_coef_2, a one-unit increase in a two-year contract , `{r} weibull_ph_model_coeff_3`, would changes the hazard of churn by `{r} weibull_ph_model_coeff_3 - 1`% compared to the baseline while a one-year contract, `{r} weibull_ph_model_coeff_4`, would change it by `{r} weibull_ph_model_coeff_4 - 1`% holding all other covariates constant (*ceteris paribus*).
+
+It means the churn rate is lowered for that group holding a two-year contract. This extends the expected tenure for that group holding a two-year contract.
+
+The survival curve (@fig-weibull.ph.model.1) is a vital tool for validating whether the analytical model aligns with your business's understanding of the customer lifecycle.
+
+```{r}
+#| label: fig-weibull.ph.model.1
+#| fig-cap: "Weibull PH Model."
+plot(weibull_ph_model, fn = c('sur'),
+     col = 'red3', lwd = 2,
+     printLegend = TRUE, cex.lab = 1.4)
+
+grid()
+```
+
+```{r}
+#| label: fig-weibull.ph.model.1b
+#| fig-cap: "Weibull PH Model."
+plot(weibull_ph_model, fn = c('haz'),
+     col = 'red3', lwd = 2,
+     printLegend = TRUE, cex.main = 1.4, cex.lab = 1.4)
+
+grid()
+```
+
+As time passes, the number of survivers or subscribers steadily decreases.
+
+The Survival Analysis reveals a significant churn rate, with the survival rate dropping to 50% after just 24 months. Due to this substantial early churn, long-term predictions become less reliable. For example, with fewer than 20% of the original subscribers remaining after 70 months, the model's ability to make precise forecasts is significantly reduced.
+
+For each covariate, the hazard ratio changes the steepness of the baseline survival curve. A hazard ratio less than 1 makes the curve less steep, indicating a lower risk and better survival. For example, a two-year contract has a positive effect, making the curve less steep (a shallower descent) and showing better survival over time.
+
+In @tbl-weibull.ph.model.1, the log coefficients (`log(scale)` and `log(shape)`) are parameters that define the Weibull distribution used in the PH model.
+
+The `shape` parameter ($\lambda$) is the key metric that dictates how the hazard rate changes over time. It determines whether the risk of an event is increasing, decreasing, or constant throughout the observation period.
+
+- $\lambda$ > 1: the hazard is increasing over time. This indicates an accelerating risk, which is common for things that wear out, like mechanical parts.
+- $\lambda$ < 1: the hazard is decreasing over time. This indicates a decelerating risk, which is often seen with customers who become more loyal over time.
+- $\lambda$ = 1: the hazard is constant over time. This is a special case known as the Exponential model, where the risk does not change.
+
+- `log(shape)` > 0 corresponds to $\lambda$ > 1: the hazard function is increasing.
+- `log(shape)` < 0 corresponds to $\lambda$ < 1: the hazard function is decreasing.
+    - In @tbl-weibull.ph.model.1, `log(shape)` = `{r} weibull_ph_model_log_shape` < 0 and the hazard function is decreasing. In addition, we exponentiate `log(shape)` = `shape` = $\lambda$ = `{r} weibull_ph_model_shape` < 1.
+- `log(shape)` = 0 corresponds to $\lambda$ = 1: the hazard function is constant.
+
+The `scale` parameter ($\eta$) is a time-scaling factor. It defines the overall magnitude of the hazard function and helps determine where the baseline survival curve is located on the time axis.
+
+When comparing two Weibull PH models, a larger `scale` parameter means the hazard is lower at a given time point, which results in a longer average duration or survival time.
+
+The relation with `log(scale)` is $\eta = e^{\log(\text{scale})}$. In a Weibull PH model output (@tbl-weibull.ph.model.1), the `log(shape)` parameter is provided: `{r} weibull_ph_model_log_scale`; and the scale can be calculated: $\eta$ = `{r} weibull_ph_model_scale`.
+
+Based on the analysis, we can confidently say that the hazard of churn is not constant over time.
+
+The `log(shape)` coefficient, `{r} weibull_ph_model_log_shape`, in @tbl-weibull.ph.model.1 confirms that the hazard curve is decreasing. As shown in @fig-weibull.ph.model.1b, the hazard of churn is highest in the first 7 to 10 months. After this initial period, the hazard rapidly declines and then flattens out.
+
+This behavior directly explains the shape of the survival curve in @fig-weibull.ph.model.1: the high initial hazard causes the steep drop in the number of subscribers, while the subsequent decline and flattening of the hazard curve is reflected in the survival curve's deceleration over time.
+
+## Accelerated Failure Time Models
+
+To confirm our findings, we fit a Weibull Accelerated Failure Time (AFT) model using the same set of independant variables or covariates:
+
+- Subscribers' `Contract` type.
+- Whether they have `MultipleLines`.
+
+`tenure` and `Churn` remain the two dependent variables.
+
+```{r}
+#| include: false
+# AFT regression
+# On the left side, only dbl, int
+# On the right side, only fct
+# telco2
+# left
+#   $tenure int
+#   $Churn int
+# right (covariates)
+#   $Contract fct
+#   $MultipleLines fct
+weibull_aft_model <- survival::survreg(Surv(tenure, Churn) ~ Contract + MultipleLines,
+                          dist = 'weibull',
+                          data = telco2)
+
+summary(weibull_aft_model)
+
+attributes(weibull_aft_model)
+```
+
+```{r}
+#| include: false
+# Keep one result
+weibull_aft_model_coeff_1 <- round(weibull_aft_model$coefficients[3], 3)
+
+# Keep one result
+weibull_aft_model_scale <- round(weibull_aft_model$scale, 3)
+# Keep one result
+weibull_aft_model_log_scale <- round(log(weibull_aft_model_scale), 3)
+```
+
+As shown in @tbl-weibull.aft.model.coef.1, each result should be interpreted in isolation, holding all other covariates constant (*ceteris paribus*). Each result should also be interpreted on a log `scale`, so their direct values are not always intuitive.
+
+```{r}
+#| label: tbl-weibull.aft.model.coef.1
+#| tbl-cap: "Coefficients."
+knitr::kable(weibull_aft_model$coefficients,
+             col.names = 'Coef.',
+             align = 'c')
+```
+
+- Coefficient > 0: as the value of the covariate increases, the duration or survival time also increases, holding all other variables constant.
+- Coefficient < 0: as the covariate increases, the duration or survival time decreases.
+- Coefficient = 0: the covariate has no effect on the the duration or survival time.
+
+As shown in @tbl-weibull.aft.model.coef.1, a two-year contract has a more substantial effect on duration or survival time, with a coefficient of `{r} weibull_aft_model_coeff_1` then a one-year contract.
+
+This finding is consistent with the results from the Weibull PH model. A higher coefficient in the Weibull AFT model (indicating a longer duration or survival time) corresponds directly to a lower hazard of churn in the Weibull PH model.
+
+As shown in @tbl-weibull.aft.model.coef.2, it is often easier to interpret the exponentiated coefficients. These provide a direct, multiplicative measure of the effect on duration or survival time.
+
+```{r}
+#| label: tbl-weibull.aft.model.coef.2
+#| tbl-cap: "exp(Coefficients)."
+knitr::kable(exp(weibull_aft_model$coefficients),
+             col.names = 'exp(Coef.)',
+             align = 'c')
+```
+
+```{r}
+#| include: false
+# Keep one result
+weibull_aft_model_coeff_2 <- round(exp(weibull_aft_model$coefficients[3]), 3)
+```
+
+- Time Ratio > 1: the covariate increases the duration or survival time. For example, a time ratio of 2.0 means the duration is 2 times longer for a one-unit increase in the covariate, holding all other covariates constant.
+- Time Ratio < 1: the covariate decreases the duration or survival time. A duration ratio of 0.5 means the duration is 2 times shorter for a one-unit increase in the covariate, holding all other covariates constant.
+- Time Ratio = 1: the covariate has no effect on duration or survival time.
+
+A one-unit increase in a two-year contract would extend the duration by a factor of `{r} weibull_aft_model_coeff_2` compared to the baseline, holding all other covariates constant (*ceteris paribus*).
+
+The time ratio is also called the accelation factor.
+
+The coefficients from these two model types are inversely related. While the AFT coefficients describe a multiplicative change in duration or survival time, the PH coefficients describe a multiplicative change in the hazard rate.
+
+As shown in @tbl-weibull.aft.model.pch.1, we also compute the percentage change in duration or survival time from the model's coefficients: $\text{percentage change} = (e^{\beta} - 1) \times 100\%$.
+
+```{r}
+#| label: tbl-weibull.aft.model.pch.1
+#| tbl-cap: "Pourcentage Change."
+knitr::kable((exp(weibull_aft_model$coefficients) - 1) * 100,
+             col.names = '%Change',
+             align = 'c')
+```
+
+```{r}
+#| include: false
+# Keep one result
+weibull_aft_model_pctch_1 <- round((weibull_aft_model_coeff_2 - 1) * 100, 3)
+```
+
+- Percentage ratio > 1: an increase in the duration or survival time.
+- Percentage ratio < 1: a decrease in the duration or survival time. 
+- Percentage ratio = 1: no effect in the duration or survival time.
+
+Compared to the baseline group, having a two-year contract extends the subscription duration by `{r} weibull_aft_model_pctch_1`%, holding all other covariates constant (*ceteris paribus*). This means the entire survival curve for this group is stretched out, a concept that is far easier for a non-technical audience to understand than a raw coefficient or time ratio.
+
+PH Models produce coefficients that measure the effect of covariates on churn. These coefficients quantify how a covariate influences the hazard, which in turn impacts subscription duration.
+
+AFT Models produce coefficients that measure the effect of covariates on duration. These coefficients quantify how a covariate influences the survival time, which in turn impacts the churn rate.
+
+An increase in subscription duration is inversely related to the hazard of churn. A longer subscription period is associated with a lower risk of the event (churn).
+
+For example, two-year contracts are associated with a reduction in churn, `{r} weibull_aft_model_pctch_1`%, an effect that is greater than that of one-year contracts. This finding is consistent with the results from the Weibull PH model.
+
+## Just a Reminder
+
+The parameter estimates for Weibull PH and AFT models have fundamentally different interpretations.
+
+The Proportional Hazards (PH) models are based on the assumption that covariates have a multiplicative effect on the hazard (or risk) of an event. This makes it ideal for comparing how different factors increase or decrease the risk of churn.
+
+The Accelerated Failure Time (AFT) models, by contrast, are based on the assumption that covariates have a multiplicative effect on the duration or survival time. This makes it useful for comparing how different factors extend or shorten the subscription period.
+
+The Weibull PH model can also be used to generate visualizations that depict the hazard rate and survival probability over the subscription duration (@fig-weibull.ph_model.functions).
+
+```{r}
+#| label: fig-weibull.ph_model.functions
+#| fig-cap: "Weibull PH Functions."
+par(mfrow = c(2,2))
+
+plot(weibull_ph_model, fn = 'haz', col = 'red3')
+plot(weibull_ph_model, fn = 'cum', col = 'red3')
+plot(weibull_ph_model, fn = 'den', col = 'red3')
+plot(weibull_ph_model, fn = 'sur', col = 'red3')
+
+par(mfrow = c(1,1))
+```
+
+In @tbl-weibull.ph.model.1, the log coefficients (`log(scale)` and `log(shape)`) are parameters that define the Weibull distribution used in the PH model.
+
+The `shape` parameter ($\lambda$) is the key metric that dictates how the hazard rate changes over time. It determines whether the risk of an event is increasing, decreasing, or constant throughout the observation period.
+
+- $\lambda$ > 1: the hazard is increasing over time. This indicates an accelerating risk, which is common for things that wear out, like mechanical parts.
+- $\lambda$ < 1: the hazard is decreasing over time. This indicates a decelerating risk, which is often seen with customers who become more loyal over time.
+- $\lambda$ = 1: the hazard is constant over time. This is a special case known as the Exponential model, where the risk does not change.
+
+- `log(shape)` > 0 corresponds to $\lambda$ > 1: the hazard function is increasing.
+- `log(shape)` < 0 corresponds to $\lambda$ < 1: the hazard function is decreasing.
+    - In @tbl-weibull.ph.model.1, `log(shape)` = `{r} weibull_ph_model_log_shape` < 0 and the hazard function is decreasing. In addition, we exponentiate `log(shape)` = `shape` = $\lambda$ = `{r} weibull_ph_model_shape` < 1.
+- `log(shape)` = 0 corresponds to $\lambda$ = 1: the hazard function is constant.
+
+While PH models are commonly used to visualize hazard and survival curves, AFT models are focused on measuring the direct impact on time.
+
+The key distinction is that PH models measure the effect of covariates on the churn rate, which in turn affects duration, whereas AFT models directly measure the effect on duration, which in turn affects the churn rate.
+
+Ultimately, the choice of model depends on the research question. However, the results from both models can be compared using their respective metrics (for example, hazard ratios for PH models and time ratios for AFT models) to provide a consistent view of the underlying dynamics.
+
+The relationship between the Weibull PH model and the Weibull AFT model is unique and directly tied to the `shape` parameter. The Weibull distribution is the only distribution that satisfies both the PH and AFT assumptions, allowing for a direct conversion between the parameters of the two models.
+
+The key to this relationship is that **the `shape` parameter in a Weibull PH model** ($\lambda_{PH}$) is the reciprocal of **the `scale` parameter in a Weibull AFT model** ($\sigma_{AFT}$):
+
+$$\lambda_{PH} = \frac{1}{\sigma_{AFT}}$$
+
+- Weibull PH Model `shape` parameter, $\lambda_{PH}$ = `{r} weibull_ph_model_shape`.
+- Weibull AFT Model `scale` parameter, $\sigma_{AFT}$ = `{r} weibull_aft_model_scale` and the reciprocal $\frac{1}{\sigma_{AFT}}$ = `{r} round(1 / weibull_aft_model_scale, 3)`.
+
+The Weibull AFT model confirms the Weibull PH model.
+
+## Comparison of the Parameters
+
+**Weibull PH model, `log(scale)` and `scale`.**
+
+The `scale` parameter ($\eta$) is a time-scaling factor. It defines the overall magnitude of the hazard function and helps determine where the baseline survival curve is located on the time axis.
+
+When comparing two Weibull PH models, a larger `scale` parameter is associated with a lower hazard and, consequently, a longer duration or survival time.
+
+The relation with `log(scale)` is $\eta = e^{\log(\text{scale})}$. In a Weibull PH model output (@tbl-weibull.ph.model.1), the `log(shape)` parameter is provided: `{r} weibull_ph_model_log_scale`; and the scale can be calculated: $\eta$ = `{r} weibull_ph_model_scale`.
+
+**Weibull PH model, `log(shape)` and `shape`.**
+
+The `shape` parameter ($\lambda$) is the most important parameter for interpreting the Weibull PH model's baseline hazard. It describes how the hazard rate changes over time.
+
+- $\lambda$ > 1: the hazard is increasing over time. This indicates an accelerating risk, which is common for things that wear out, like mechanical parts.
+- $\lambda$ < 1: the hazard is decreasing over time. This indicates a decelerating risk, which is often seen with customers who become more loyal over time.
+- $\lambda$ = 1: the hazard is constant over time. This is a special case known as the Exponential model, where the risk does not change.
+
+- `log(shape)` > 0 corresponds to $\lambda$ > 1: the hazard function is increasing.
+- `log(shape)` < 0 corresponds to $\lambda$ < 1: the hazard function is decreasing.
+    - In @tbl-weibull.ph.model.1, `log(shape)` = `{r} weibull_ph_model_log_shape` < 0 and the hazard function is decreasing. In addition, we exponentiate `log(shape)` = `shape` = $\lambda$ = `{r} weibull_ph_model_shape` < 1.
+- `log(shape)` = 0 corresponds to $\lambda$ = 1: the hazard function is constant.
+
+**Weibull AFT model, `log(scale)` and `scale`.**
+
+In the AFT model, the `scale` parameter ($\sigma$) defines the hazard's behavior over time.
+
+- $\sigma$ < 1: the hazard is increasing over time. This indicates an accelerating risk, which is common for things that wear out, like mechanical parts.
+- $\sigma$ > 1: the hazard is decreasing over time. This indicates a decelerating risk, which is often seen with customers who become more loyal over time.
+    - `scale` = $\sigma$ = `{r} weibull_aft_model_scale` > 1 and the hazard function is decreasing. `log(scale)` = `{r} weibull_aft_model_log_scale`.
+- $\sigma$ > 1: the hazard is constant over time. 
+
+The `shape` parameter in a Weibull PH model ($\lambda_{PH}$) is the reciprocal of the `scale` parameter in a Weibull AFT model ($\sigma_{AFT}$):
+
+$$\lambda_{PH} = \frac{1}{\sigma_{AFT}}$$
+
+- Weibull PH Model `shape` parameter, $\lambda_{PH}$ = `{r} weibull_ph_model_shape`.
+- Weibull AFT Model `scale` parameter, $\sigma_{AFT}$ = `{r} weibull_aft_model_scale` and the reciprocal $\frac{1}{\sigma_{AFT}}$ = `{r} round(1 / weibull_aft_model_scale, 3)`.
+
+## Takeways
+
+It is critical to select the right model to accurately represent the data, as a proper understanding of the hazard and survival functions is essential for making sound business decisions.
+
+Beyond the statistics, the churn rate is a serious business issue with a direct impact on customer lifecycle management, revenues and long-term profitability.
+
+Given the model's results, any initiative to lower churn is likely to increase long-term profits. The analysis of the Weibull model's shape parameter revealed that the hazard of churn is decreasing over time, particularly after the first 7 to 10 months. This means that customers who have already stayed longer are actually becoming more loyal and have a lower risk of churning. Therefore, a more effective strategy would be to focus retention efforts and incentives on newer customers, who are in the initial high-risk period, rather than on your most loyal, long-term subscribers.
+
+## Comparing Survival Curves {#sec-comparing-survival-curves}
+
+We can also compare survival curves across different customer segments to gain deeper insights into churn behavior.
+
+For example, we might want to know if there is a difference in churn rates between genders.
+
+```{r}
+#| label: fig-churn.gender
+#| fig-cap: "Churn by Gender"
+mosaicplot(telco$gender ~ telco$Churn,
+           xlab = 'Gender', ylab = 'Churn',
+           main = '',
+           col = c(0, '#377EB8'), cex = 1.4)
+```
+
+```{r}
+#| eval: false
+#| include: false
+#| label: fig-churn.gender2
+#| fig-cap: "Churn by Gender"
+library(vcd)
+library(grid)
+
+doubledecker(Churn ~ gender, data = telco,
+             gp = gpar(fill = c(0, '#377EB8')))
+```
+
+```{r}
+#| label: tbl-churn.gender
+#| tbl-cap: "Churn By Gender: Absolute and Percentage Values."
+churn_gender <- table(telco$Churn, telco$gender)
+churn_gender2 <- round(prop.table(churn_gender)*100, 2)
+
+knitr::kable(cbind(churn_gender,
+                   churn_gender2))
+```
+
+As shown in @tbl-churn.gender and @fig-churn.gender, it appears that the churn rates for males and females are quite similar.
+
+While a simple count of total churned customers by gender is a good starting point, it does not account for the duration of their subscriptions or the size of each group. Survival Analysis allows us to move beyond these simple counts to see if the risk of churn changes differently for each segment over time.
+
+`tenure` and `Churn` are the two dependent variables.
+
+We run Weibull PH model 2, using the same two independant variables or covariates:
+
+- Subscribers' `Contract` type.
+- Whether they have `MultipleLines`.
+
+This time, we stratify the results by `gender`.
+
+```{r}
+#| include: false
+# PH regression
+weibull_ph_model_2 <- eha::phreg(Surv(tenure, Churn) ~ Contract + MultipleLines + strata(gender),
+                           dist = 'weibull',
+                           data = telco2)
+
+summary(weibull_ph_model_2)
+
+attributes(weibull_ph_model_2)
+```
+
+We are interested in the `log(scale)` parameters for `Male` and `Female`.
+
+The `scale` ($\eta$) and `log(scale)` are time-scaling factors. They defines the overall magnitude of the hazard function and help determine where the baseline survival curve is located on the time axis.
+
+When comparing two Weibull PH models or two subgroups, larger `scale` and `log(scale)` parameters are associated with a lower hazard and, consequently, a longer duration or survival time. 
+
+```{r}
+#| label: tbl-weibull.ph.model.2.coef.1
+#| tbl-cap: "Coefficients."
+knitr::kable(weibull_ph_model_2$coefficients,
+             col.names = 'Coef.',
+             align = 'c')
+```
+
+As shown in @tbl-weibull.ph.model.2.coef.1, the parameters are not very different, suggesting that gender does not have a meaningful impact on churn.
+
+- `Female`: `log(scale):1`.
+- `Male`: `log(scale):2`.
+
+```{r}
+#| label: fig-weibull.ph.model.2
+#| fig-cap: "Weibull PH Model 2."
+plot(weibull_ph_model_2, fn = c('sur'),
+     col = c('darkgreen', 'red3'), lwd = 2,
+     printLegend = FALSE, cex.main = 1.4, cex.lab = 1.4)
+
+grid()
+
+legend('topright', inset = 0.02,
+       c('Female', 'Male'), lty = c(1,2),
+       col = c('darkgreen', 'red3'), lwd = 2, cex = 1.4)
+```
+
+`1` is always associated with the **first** category or `level` of `factor` `gender` in the dataset.
+
+```{r}
+paste("class of gender:", class(telco2$gender))
+paste("levels of gender:", levels(telco2$gender))
+```
+
+`Female` is the **first** category or `level`.
+
+As shown in @fig-weibull.ph.model.2, the survival curves for the subgroups are nearly identical and closely resemble the survival curve of the overall population. This suggests that gender does not have a significant impact on duration or survival time.
+
+Now, what would be the difference between customers who have `Dependents` (children) or not. We run Weibull PH model 3.
+
+```{r}
+#| include: false
+# PH regression
+weibull_ph_model_3 <- eha::phreg(Surv(tenure, Churn) ~ Contract + MultipleLines + strata(Dependents),
+                          dist = 'weibull',
+                          data = telco2)
+
+summary(weibull_ph_model_3)
+
+attributes(weibull_ph_model_3)
+```
+
+```{r}
+#| label: tbl-weibull.ph.model.3.coef.1
+#| tbl-cap: "Coefficients."
+knitr::kable(weibull_ph_model_3$coefficients,
+             col.names = 'Coef.',
+             align = 'c')
+```
+
+As shown in @tbl-weibull.ph.model.3.coef.1, the parameters are different, suggesting that `Dependents` (children) does have a meaningful impact on churn.
+
+- `No`: `log(scale):1`.
+- `Yes`: `log(scale):2`.
+
+`1` is always associated with the **first** category or `level` of `factor` `Dependents` in the dataset.
+
+```{r}
+paste("class of Dependents:", class(telco2$Dependents))
+paste("levels of Dependents:", levels(telco2$Dependents))
+```
+
+`No` is the **first** category or `level`.
+
+When comparing two Weibull PH models or two subgroups, larger `scale` and `log(scale)` parameters are associated with a lower hazard and, consequently, a longer duration or survival time. 
+
+```{r}
+#| label: fig-weibull.ph.model.3
+#| fig-cap: "Weibull PH Model 3."
+plot(weibull_ph_model_3, fn = c('sur'),
+     col = c('darkgreen', 'red3'), lwd = 2,
+     printLegend = FALSE, cex.lab = 1.4)
+
+grid()
+
+legend('topright', inset = 0.02,
+       c('No', 'Yes'), lty = c(1,2),
+       col = c('darkgreen', 'red3'), lwd = 2, cex = 1.4)
+```
+
+As shown in @fig-weibull.ph.model.3, the survival curve for customers with `Dependents` (children) is noticeably higher than the baseline curve. This visual evidence suggests that customers with dependents are more loyal and have a significantly higher probability of remaining subscribed at any given point in time.
+
+To determine if this difference is statistically significant, we would perform a log-rank test. The test would likely result in a rejection of the null hypothesis, which states that the two survival curves are identical. This would confirm that the survival curves are, in fact, statistically different.
+
+From the results, the model has a maximun log(likelihood) of `{r} round(weibull_ph_model_3$loglik[2], 3)` with 4 covariates (`{r} weibull_ph_model_3$df` degrees of freedom).
+
+log-rank test statistic = $-\tfrac{loglik}{df}$ where $loglik$ is the `Max. log. likelihood` or the maximum log(likelihood).
+
+The log-rank test statistic is `{r} round(-weibull_ph_model_3$loglik[2]/weibull_ph_model_3$df, 3)`, giving a p-value = `{r} round(weibull_ph_model_3$score, 3)`, way below 0.05 or 5%. The test is statistically significant and we can reject the null hypothesis. The two survival curves are different.
+
+For any duration or survival time, the survival rate of those with `Dependents` (children) is statistically higher and the churn is lower.
+
+## Takeaway
+
+Based on these findings, the marketing department should prioritize customer segmentation based on whether subscribers have `Dependents` (children), as this group has a significantly higher survival rate.
+
+Conversely, the analysis revealed no statistically significant difference in churn rates between genders, so focusing marketing efforts on gender composition would be an inefficient use of resources.
