@@ -1,0 +1,505 @@
+project:
+  type: book  # book, website, manuscript ; détermine paramètres suivant
+#  output-dir:  # aucun par défaut, docs pour sous-répertoire, pour imiter GitHub, repo/docs sur master branch
+  output-dir: docs  # changer pour GitHub Pages
+  render:
+    - "*.qmd"  # tous .qmd
+#    - index.qmd  # un .qmd
+#    - about.qmd  # un autre .qmd
+#    - section1.qmd  # un autre .qmd
+#    - section*.qmd  # tous les .qmd commençant par section
+#    - "!ignored.qmd"  # tous sauf (! est NOT)
+#    - "ignored-dir/"  # tous .qmd dans le répertoire
+#    - "!ignored-dir/"  # tout sauf
+#    et plus...
+#  resources:
+#    - llms.txt  # rendre contenu accessible aux LLM ; monter fichier llms.txt, mettre à la racine; # https://quarto.org/docs/websites/website-llm
+#    et plus...
+###############################################################################
+# compiler projet avec commandes de terminal
+# quarto preview
+# vs
+# quarto render
+# quarto render nom.qmd
+# quarto render .qmd
+# quarto render subdir
+# quarto render --to html
+# quarto render --to pdf --no-execute
+# quarto render --to epub --execute
+# quarto render --to epub --cache-refresh
+# quarto render --to epub --clean
+###############################################################################
+# publier projet
+# https://quarto.org/docs/publishing/
+###############################################################################
+book:  # # book, website, manuscript ; détermine paramètres suivant
+  title: "Customer Churn Analysis"  # titre et nom fichiers html, pdf, ... compilés (render) dans output-dir: en haut
+  subtitle: "Understanding Survival Analysis"
+  description: "Understanding survival analysis for customer churn analysis."  # pour html, sous title, subtitle
+  #  output-file: "mon_fichier"  # changer nom fichiers html, pdf, ... compilés (render) dans output-dir: en haut ; par défaut, le nom est title: ou nom.qmd
+  author:  # détails pour html
+    - name: "Colleague One"
+      orcid: 0000-0000-0000-0000
+      email: first@example.com
+      affiliation: "University X"
+#      role: "Prime Author"
+    - name: "Colleague Two"
+      orcid: 0000-0000-0000-0000
+      email: second@example.com
+      affiliation: "Institute Y"
+#      role: "Proofreader"
+#  institute:
+#    - "Domain,\n\nInstitution\n\nCity, State"
+#    - "Domain,\n\nInstitution\n\nCity, State"
+  date: last-modified  # today, "2026-04-01", last-modified ; publication vs mise à jour
+#  date-modified: last-modified  # idem
+  date-format: "MMMM YYYY"  # full, long, medium, short, iso ou "personnalisé" avec balises Y, M, D, d
+#  abstract: "Sommaire général"  # pour pdf et documentclass: article, report
+#  abstract-title: "Titre du sommaire"
+#  doi: "10.1000/xyz123"  # code DOI de publication
+  favicon: img/favicon.ico  # image onglet web
+  search:  # boite de recherche
+    type: textbox  # overlay, textbox
+    copy-button: true  # true, false default ; copy icon
+    show-item-context: true  # chemin
+  reader-mode: true  # pour html ; bouton pour changer de mode
+#  repo-url: https://github.com/...  # pour html ; icône de lien vers le code source ; github s'affiche à divers endroits (header, sidebar, footer)
+#  repo-actions: [edit, issue, source]  # activer edit this page, view source, report an issue
+#  repo-subdir: docs  # dossier sur le repo
+#  repo-branch: main  # ou autre branche
+#  issue-url: https://github.com/...  # icône de lien vers Report an Issue
+#  site-url: https://example.com  # pour publier (GitHub, Netlify, Vercel)
+  downloads: [pdf, epub]  # pour html ; icône pour télécharger autres versions que html (si existantes) ; voir format-links: de html plus bas
+#  sharing: [twitter, facebook, linkedin, email]  # pour html ; icônes de liens
+####################################
+#  isbn: "978-3-8474-1017-1"
+#  issn: "1234-5678"
+#  publisher: "Éditions Quarto"
+#  status: "forthcoming"
+#  license: "CC BY-SA 4.0"
+#  version: "1.0.0"
+#  et plus de métadonnées : collaborateurs, rôles divers, archive, autorités, dimensions, éditions, série, publications, numéro, dates, endroits, genre, jurisdiction, keyword, langues, etc.
+####################################
+  chapters:  # fichier et nom de section dans fichier (début)
+    - index.qmd
+    - 01-modeling.qmd
+    - 02-survival.qmd
+    - 03-conclusion.qmd
+# autre architecture possible...
+#  chapters:
+#    - index.qmd  # avec {.unnumbered}
+#    - preface.qmd  # avec {.unnumbered}
+#    - part: "One"  # sans .qmd
+#      chapters:
+#        - intro.qmd
+#    - part: two.qmd  # avec .qmd
+#      chapters:
+#        - summary.qmd
+#        - references.qmd  # avec {.unnumbered}
+#    - part: three.qmd  # sans chapters:, three.qmd inactivé
+#  appendices:  # nombre A, B, C vs 1, 2, 4 avant appendices
+#    - tools.qmd
+####################################
+  sidebar:
+    title: ""  # titre sidebar court-circuite title: plus haut
+    style: docked  # docked, floating
+    logo: img/img6.png  # image en médaillon
+#    logo-alt: ""  # metadonnées descriptive
+    logo-href: /index.html  # déterminer le lien où conduit l'image 
+    background: light  # couleur : primary, secondary, success, danger, warning, info, light, dark, blue...
+#    foreground: primary  # couleur police : idem
+    border: true  # séparateur
+    collapse: true  # replier
+    collapse-level: 2  # affichage des divisions # et ##, replier le reste
+    breadcrumbs: true  # true, false ; affichage du chemin complet du lien de la page
+#    header: "haut du sidebar"
+#    footer: "bas du sidebar"
+#    tools:  # compléments affichés
+#      - icon: github  # icône de lien vers le code source ; voir plus haut
+#        href: https://github.com/  # icône de lien vers le code source ; github s'affiche à divers endroits (header, sidebar, footer)
+#     et plus...
+####################################
+#  body-header: "En haut de page"  # pour html
+#  body-footer: "En bas de page"  # pour html
+#  margin-header: "En haut de marge"  # pour html
+#  margin-footer: "En bas de marge"  # pour html
+####################################
+  page-navigation: true  # pour html, bas de page <--avant  suivant--> ; aussi possible dans chaque .qmd
+  back-to-top-navigation: true  # pour html, boite flottante en bas de page ; ombo avec pinned: true pour afficher navbar
+####################################
+  page-footer: 
+    border: true  # séparateur
+    background: light  # couleur : primary, secondary, success, danger, warning, info, light, dark, blue...
+#    foreground: primary  # couleur police : idem
+    left: "Book made with Quarto"
+    center: "Copyright"
+#    right: 
+#      - icon: github  # icône de lien vers le code source ; voir plus haut
+#        href: https://github.com/  # icône de lien vers le code source ; github s'affiche à divers endroits (header, navbar, sidebar, footer)  ???
+#        href: https://bsky.app/
+#      - icon: rss
+#        href: index.xml
+# rss requiert site-url: actif pour produire un feed index.xml
+#     et plus...
+####################################
+#  twitter-card:  # complément du lien plus haut ; gérer référencement dans X-Twitter vers projet
+#    title: "China"
+#    description: "description"
+#    image: img/trust.jpg
+#    card-style: summary  # summary, summary_large_image
+#    creator: "@username"
+#    site: "@compte_X"
+####################################
+#  open-graph:  # pour html ; gérer des médias (lack, Discord, Facebook, Linkedin, et plus...) ; gérer référencement vers projet
+#    title: "China"
+#    description: "description"
+#    image: img/trust.jpg
+#    locale: fr
+#    site-name: "China"
+####################################
+# application de commentaires sur projet
+# https://web.hypothes.is/
+# https://quarto.org/docs/output-formats/html-basics.html#commenting
+####################################
+#  twitter-card:  # complément du lien plus haut ; gérer référencement dans X-Twitter vers projet
+#    title: "China"
+#    description: "description"
+#    image: img/trust.jpg
+#    card-style: summary  # summary, summary_large_image
+#    creator: "@username"
+#    site: "@compte_X"
+####################################
+#  open-graph:  # pour html ; gérer des médias (lack, Discord, Facebook, Linkedin, et plus...) ; gérer référencement vers projet
+#    title: "China"
+#    description: "description"
+#    image: img/trust.jpg
+#    locale: fr
+#    site-name: "China"
+####################################
+# application de commentaires sur projet
+# https://web.hypothes.is/
+# https://quarto.org/docs/output-formats/html-basics.html#commenting
+###############################################################################
+engine: knitr  # knitr, jupyter
+knitr:  # pour blocs de code
+  opts_chunk:
+    comment: ""  # "#>" changer le préfixe des résultats de code
+    results: hold  # markup, asis, hold, hide ; résultats
+    R.options:
+      knitr.graphics.auto_pdf: true  # pour format pdf
+  opts_knit:
+    verbose: true  # affichage durant la compilation (render)
+editor: source  # source (brut), visual (UI) ; editeur markdown
+editor_options:
+  chunk_output_type: console  # inline, console ; résultats
+callout-appearance: default  # apparence des capsules colorées
+###############################################################################
+lang: en  # langue principale ; aussi possible dans chaque .qmd
+#otherlangs: [zh]  # langues secondaires ; mandarin ; aussi possible dans chaque .qmd
+language:  # changer des champs par défaut
+  en:  # pour cette langue
+    search-text-placeholder: "search"  # dans la boite de recherche
+    title-block-author-single: "Written by"
+    title-block-author-plural: "Written and revised by"
+#    title-block-affiliation-single: ""
+#    title-block-affiliation-plural: ""
+    title-block-published: "Last update"
+#    title-block-modified: "Last update"
+#    toc-title-document: "Content"
+#    toc-title-website: ""
+#    navbar-title: ""
+#    #section-title-appendices: ""
+#    et plus : boite de recherche, liens vers repo, bas de page
+###############################################################################
+execute:  # paramétrer blocs de code et résultats
+  echo: false  # true, false, fenced  # afficher bloc
+  include: true  # inclure bloc
+  eval: true  # évaluer bloc
+  enabled: true  # tout évaluer ; projet doc sans aucun code, que markdown
+  output: true  # true, false, asis ; format résultats
+  warning: false  # avertissements
+  error: false  # avertissements
+  cache: false  # true, false, refresh ; true et refresh pour minimiser recalculs ; une cache par .qmd
+  freeze: auto  # true, false, auto ; auto compile code à la compilation si le code change ; true ne compile pas code à la compilation ; avec fichier .Rproj seulement
+  keep-md: false  # garder, supprimer le fichier transitoire
+#  keep-ipynb: false  # supprimer le fichier
+###############################################################################
+#bibliography: sources.bib  # fichier à coté de _quarto.yml
+#cite-method: citeproc  # citeproc (simple), natbib, biblatex ; avec bibliography:
+# avec cite-method: citeproc, le style de citations et bibliographie est Chicago, sinon, il faut...
+#csl: ieee.csl  # apa.csl, nature.csl, etc. à coté de _quarto.yml ou...
+#csl: https://www.zotero.org/styles/ieee  # etc.
+# avec cite-method: natbib...
+#natbiboptions: "authoryear,round,comma"  # etc. et...
+#biblio-style: plainnat  # plainnat, abbrvnat, unsrtnat, etc.
+# avec cite-method: biblatex...
+#biblatexoptions: ["backend=biber","style=apa","citestyle=apa"]  # etc.
+#link-citations: true  # lien de citation vers la bibliographie
+#clean-citations: true  # supprimer les espaces superflus
+# la bibliographie est automatiquement créée à la fin du document ou de chaque .qmd (il faut ajouter à la dernière ligne # Références, ## Bibliographie...) ; mais il possible de changer, voir plus bas
+#suppress-bibliography: false  # crée automatiquement la bibliographie
+#suppress-bibliography: true  # traiter les citations dans le texte sans créer bibliographie automatique et rajouter dans le document...
+# le mieux est false et l'ajouter de ce qui suit à la fin du document .qmd pour forcer le titre
+
+#-----------------------------
+# References, Bibliographie
+
+#::: {#refs}
+#:::
+
+#-----------------------------
+
+# ou d'un references.qmd en dernier chapitre
+
+#-----------------------------
+#---
+#suppress-bibliography: false
+#---
+# References, Bibliographie
+
+#::: {#refs}
+#:::
+
+#-----------------------------
+
+# dans book et website, on peut à la place ajouter references.qmd ou bibliographie.qmd dans la structure pour mettre le ::: {#refs} :::
+# le fichier.bib contient des sources du genre...
+
+# .bib contient des sources du genre...
+#@article{knuth84,
+#  author = {Knuth, Donald E.},
+#  title = {Literate Programming},
+#  year = {1984},
+#  issue_date = {May 1984},
+#  publisher = {Oxford University Press, Inc.},
+#  address = {USA},
+#  volume = {27},
+#  number = {2},
+#  issn = {0010-4620},
+#  url = {https://doi.org/10.1093/comjnl/27.2.97},
+#  doi = {10.1093/comjnl/27.2.97},
+#  journal = {Comput. J.},
+#  month = may,
+#  pages = {97–111},
+#  numpages = {15}
+#}
+
+# citation dans le texte avec...
+# See @knuth84 for additional discussion of literate programming.
+# See @sec-introduction for additional discussion.
+# See [Chap. @sec-introduction] for...
+# See [-@sec-introduction] for...
+# See [-@sec-citation] for...
+# et plus...
+
+# autres citations pour fig, tab, form
+crossref:  # assurer la cohérence des références croisées entre .qmd
+  chapters: true
+###############################################################################
+# liens internes (cross references) vers section, .qmd, .qmd+section
+#[about](s#plus)
+#[about](summary.qmd)
+#[about](summary.qmd#plus)
+###############################################################################
+# déterminer majorité des paramètres de fig et tbl
+# comme la taille
+# directement à la fig et à la tbl
+###############################################################################
+# aucun html, css, js sur mesure n'est ajouté
+# mais aussi possible...
+###############################################################################
+format:
+  html:
+    cover-image: img/img6.png
+#    cover-image-alt: ""  # metadonnées descriptive
+    embed-resources: false  # incruster images ou faire répertoire
+    self-contained-math: false  # incruster équations maths
+    chalkboard: false  # pouvoir dessiner ; avec embed-resources: false
+    theme:  # apparence des éléments du document ; https://bootswatch.com/ ; un thème ou un thème modifié par des fichiers css/js ou plusieurs thèmes
+      light: readable  # mode clair
+      dark: darkly  # mode foncé
+    respect-user-color-scheme: true  # ordinateur qui lit fichier détermine light ou dark par défaut
+    highlight-style: arrow  # pygments, kate, zenburn, breezedark, arrow... ; apparence des blocs de code
+#    classoption: []  # modifier affichage des équations maths, par exemple
+    colorlinks: true  # colorer liens (toc, hyperliens, liens internes, citations)
+    links-as-notes: false  # liens en note de bas de page
+    toc: true  # table of contents
+#    toc-title: "Content"  # changer champ par défaut
+    toc-depth: 3  # niveaux de divisions inclus; 3 pour afficher divisions #, ##, ###
+    toc-expand: 2  # niveaux de divisions ouverts; 1 pour divisions #
+    toc-location: right  # left, right, left-body, right-body
+    number-sections: true  # numéroter divisions
+    number-depth: 3  # limiter numérotation à division ###
+#    number-offset: 0  # compteur de départ de numération à 1
+#    shift-heading-level-by: 1  # #->##, ##->###, etc.
+    smooth-scroll: true  # menus déroulants plus fluides
+    anchor-sections: true  # ajouter liens internes (cross references) visibles aux divisions
+    link-external-icon: true  # ajouter icône aux liens
+    link-external-newwindow: true  # ouvrir lien dans nouvel onglet
+    citations-hover: true  # effet sur texte et bibliographie
+    footnotes-hover: true  # effet sur note en bas de page
+    crossrefs-hover: true  # effet sur liens internes (cross references)
+    fig-align: left  # left, right, center ; aligner figures, images
+    fig-caption: true  # afficher légende de figure, image
+    fig-cap-location: bottom  # top, bottom, margin ; légende de figure, image
+    lightbox: auto  # true, false, auto ; activer pop-up-zoom des images ; {.lightbox}, {.nolightbox} avec image
+    tbl-cap-location: top  # top, bottom, margin ; légende de tableau
+#    column: screen  # body, page-inset, page, screen-inset, screen ; étendue en largeur des images ; attention à ne pas court-circuiter les paramètres de chaque image
+    code-fold: false  # true, show, false ; cacher-déplier, montrer-déplier ou montrer blocs de code
+#    code-summary: "Afficher le code source" # changer champ par défaut
+    code-tools: false  # ajouter icône ; ouvrir le code source du .qmd
+    code-copy: true  # true, false; hover ; montrer, cacher icône de copie du bloc de code
+    code-overflow: scroll  # wrap, scroll ; gérer les longues lignes de code
+    code-block-bg: true  # fond de bloc de code
+    code-block-border-left: true  # séparateur des numéros dans blocs de code
+    code-line-numbers: true  # numéro de ligne dans blocs de code
+#    code-link: false  # lien vers la doc du code ; nécessite package R downlit
+    format-links: false  # icône pour télécharger autres versions que html (si existantes) ; voir downloads: [pdf, epub] plus haut...
+#    mainfont:  # police du texte autre que celle du theme:
+#    sansfont  # police pour titres et menus
+#    monofont  # police pour blocs de code
+#    mathfont  # police pour maths
+#    fontsize: 11pt  # taille de police autre que celle du theme:
+#    linestretch: 1.5  # interligne autre que celle du theme:
+#    fontcolor:  # couleur du texte autre que celle du theme:
+#    linkcolor:  # couleur des liens autre que celle du theme:
+#    css: styles.css  # personnaliser theme: ou plus
+#    include-in-header:  # ajouter scripts d'analyse, polices Web complexes
+#    include-before-body:  # ajouter bandeaux d'annonce, éléments qui doivent apparaitre avant le contenu
+ #   include-after-body:  # manipuler DOM, script.js
+####################################
+  pdf:
+    pdf-engine: lualatex  # compilateur pdflatex, xelatex, lualatex
+    latex-auto-install: false  # tlmgr est le gestionnaire de packages de TeX Live intégré à TinyTeX, le module R (mettre à true) ; si l'ordi compte MikTeX, il a son propre gestionnaire GUI (mettre à false), la compilation plante, il faut gérer dans MikTeX et re-compiler ; si l'ordi compte Live TeX (true ou false), il faut une permission dans le terminal, la compilation plante, il faut gérer dans Live TeX et re-compiler
+    keep-tex: false  # garder, supprimer les fichiers transitoires .tex, .aux, etc.
+    documentclass: scrbook  # article / scrartcl / extarticle, report / scrreprt, book / scrbook / extbook, memoir, novel ; https://ctan.org/pkg/koma-script
+    classoption:
+      - onecolumn  # onecolumn, twocolumn
+      - portrait  # portrait, landscape
+      - openany  # openany, openright
+      - twoside  # oneside, twoside
+      # et plus : headings, parskip, numbers, BCOR...
+    pagestyle: plain  # plain, headings, empty, fancy ; détermine numéro de page, titres de chapitres (entêtes) et bas de page
+    papersize: letter  # a4, a5, legal
+    geometry:  # geometry plus stable que margin- plus bas...
+      - top=2.5cm  # dm, mm, in ,pt
+      - bottom=2.5cm
+      - left=2.5cm
+      - right=2.5cm
+#    margin-left:  # façon html instable
+#    margin-right:
+#    margin-top:
+#    margin-bottom:
+    fontfamily: kpfonts-otf  # voir choix classiques plus bas... ; façon package stable vs mainfont, ne dépend pas du OS ; aussi activé avec \usepackage{}
+#    mainfont: "DejaVu Sans"  # "Liberation Serif", "Ubuntu", "Arial"... ; façon instable avec package fontspec qui cherche les polices du OS de l'ordinateur
+#    sansfont: "DejaVu Sans"  # titres
+#    monofont: "DejaVu Sans"  # blocs de codes
+    fontsize: 12pt  # 11 +- 1 ou 2 selon fontfamily et autres packages
+    indent: false  # indenter le premier paragraphe
+    colorlinks: true  ## colorer liens
+    linkcolor: blue!80!black  # liens internes (cross references) ; avec le mixe de couleurs du package xcolor
+    toccolor: red!50!black  # table of contents
+    urlcolor: blue!80!black  # hyperliens
+    citecolor: green!50!black  # citations
+    links-as-notes: true  # liens en bas de page
+    highlight-style: arrow  # pygments, kate, zenburn, breezedark, arrow... ; apparence des blocs de code
+# % est un commentaire dans TeX
+# comme # est un commentaire dans Markdown
+    include-in-header: 
+      text: |
+        %preamble.tex  % fichier à coté de _quarto.yml
+        %%%%%
+        % la gestion des packages dépend de MiKTeX ou Live TeX
+        % MiKTeX démarre avec des packages de base
+        % il faut ajouter les autres packages
+        % certains packages, et des options LaTeX, sont déterminés ailleurs dans le YAML ; Quarto appelle alors des packages automatiquement ; mais pas tous...
+        % cette zone LaTeX est donc complémentaire pour enrichir le YAML...
+        \usepackage{xcolor}  % plus d'options de coloration
+        \usepackage{graphicx}  % plus d'options de figures
+        \usepackage{wrapfig}  % plus d'option de figures
+        %%%%%
+        % en complément à police et/ou changement sur la police...
+        \renewcommand{\familydefault}{\sfdefault}
+        %%%%%
+        % pour ajouter logo sur la page de garde...
+        % ici
+#    include-before-body:  # frontmatter
+#      text: |
+#    include-after-body:  # backmatter
+#      text: |
+#      file: file.tex
+    toc: true  # table of contents
+#    toc-title:   # changer champ par défaut
+    toc-depth: 4  # niveaux de divisions max; 3 pour afficher #, ##, ###
+    lof: false  # list of figures, suivant table of contents
+    lot: false  # list of tables, suivant table of contents
+    number-sections: true  # numéroter divisions
+    number-depth: 3  # limiter numérotation à division ###
+#    number-offset: 0  # compteur de départ de numération à 1
+#    shift-heading-level-by: 1  # #->##, ##->###, etc.
+    fig-caption: true  # afficher légende de figure, image
+    fig-align: center  # left, right, center ; aligner figures, images
+    fig-cap-location: bottom  # top, bottom, margin ; légende de figure, image
+    tbl-cap-location: top  # top, bottom, margin ; légende de tableau
+    code-block-bg: true  # fond de bloc de code
+    code-block-border-left: true  # séparateur des numéros dans blocs de code
+    code-line-numbers: true  # numéro de ligne dans blocs de code
+####################################
+  epub:
+    cover-image: img/img6.png
+#    cover-image-alt: ""  # metadonnées descriptive
+    title-page: true  # page titre séparée au début
+    epub-subdirectory: content  # organisation fichiers internes
+    toc: true  # table of contents
+#    toc-title:   # changer le champ par défaut
+    toc-depth: 3  # niveaux de divisions max; 3 pour afficher #, ##, ###
+    number-sections: true  # numéroter divisions
+    number-depth: 3  # limiter numérotation à division ###
+#    number-offset: 0  # compteur de départ de numération à 1
+#    shift-heading-level-by: 1  # #->##, ##->###, etc.
+    fig-caption: true  # afficher légende de figure, image
+    fig-align: center  # left, right, center ; aligner figures, images
+    fig-cap-location: bottom  # top, bottom, margin ; légende de figure, image
+    tbl-cap-location: top  # top, bottom, margin ; légende de tableau
+    lightbox: auto  # true, false, auto ; activer pop-up-zoom des images ; {.lightbox}, {.nolightbox} avec image
+    code-block-bg: true  # fond de bloc de code
+    code-block-border-left: true  # séparateur des numéros dans blocs de code
+    code-line-numbers: true  # numéro de ligne dans blocs de code
+####################################
+# autres formats avec leurs paramètres propres
+
+#  odt: default
+#  rts: default
+
+#  gfm: default  # GitHub Flavored Markdown, la version spécifique utilisée par GitHub, pour un README
+#  commonmark: default  # tentative de standardisation du Markdown pour qu'il soit interprété de la même manière partout, mais moins riche
+
+#  asciidoc: default  # langage de balisage très puissant, souvent préféré au Markdown pour les livres techniques très complexes
+
+#  hugo: default  # pour le générateur de sites statiques Hugo, prépare le fichier avec le header YAML compatible avec les thèmes Hugo pour une publication Web ultra-rapide
+
+#  ipynb: default  # convertir un fichier Quarto en un notebook interactif
+
+#  typst: default  # nouveau venu qui veut remplacer LaTeX, moteur de composition ultra-rapide, syntaxe beaucoup plus simple que le LaTeX traditionnel
+
+#  man: default  # pour créer des pages de manuel Unix/Linux, pour documenter des outils en ligne de commande, pour des documentations système
+
+#  mediawiki: default  # format utilisé par Wikipédia, pour contribuer à un wiki d'entreprise ou public,
+#  vimwiki: default  # format spécifique pour les utilisateurs de l'éditeur de texte Vim
+###############################################################################
+#| Valeur YAML | Nom de la police  | Style                                                      |
+#|-------------|-------------------|------------------------------------------------------------|
+#| libertinus  | Libertinus        | Moderne, très complet (Sérif, Sans, Mono, Math).           |
+#| biolinum    | Biolinum          | Une sans-sérif élégante (souvent mariée à Libertine).      |
+#| charter     | Bitstream Charter | Très lisible, excellente pour les longs rapports.          |
+#| utopia      | Utopia            | Classique, académique et solide.                           |
+#| palatino    | Palatino          | Une police de style ancien, très aérée.                    |
+#| garamond    | EB Garamond       | Très élégante, idéale pour les livres littéraires.         |
+#| lmodern     | Latin Modern      | La police LaTeX par défaut, mais en version haute qualité. |
+#| inter       | Inter             | Très moderne, style "interface tech" (Sans-Sérif).         |
+#| kpfonts       | KpFonts         | Moderne, complet, pour les maths  |
+#| kpfonts-otf   | KpFonts         | Moderne, complet, pour les maths  |
+
+# choix dépend du compilateur pdflatex, xelatex, lualatex
+# peut requérir l'installation d'un package avec MiKTeX ou TeX Live
+# peut requiérir l'installation sur le OS de l'ordinateur
