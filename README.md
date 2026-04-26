@@ -1,7 +1,7 @@
 # Demo, Quarto
 
 Book on a statistical technique using R.  
-Downloadable **PDF** and **ePub** formats (see above). Right click to: <a href="https://ugolabo.github.io/demo_book_quarto_pdf_churn/" target="_blank">HTML format</a>.  
+Downloadable **PDF** and **ePub** formats (see above, in docs/). Right click to: <a href="https://ugolabo.github.io/demo_book_quarto_pdf_churn/" target="_blank">HTML format</a>.  
 This book is a variation of the report found in the demo_quarto_report_tufte_html_churn repo.  
 There are [two ways to publish](#publish) a Quarto document on GitHub.
 
